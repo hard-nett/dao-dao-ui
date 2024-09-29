@@ -284,6 +284,10 @@ export type CodeIdConfig = {
 
   // Valence
   ValenceAccount?: number
+
+  // Shitstrap
+  ShitStrap?: number 
+  ShitStrapFactory?: number 
 }
 
 export type CodeHashConfig = {

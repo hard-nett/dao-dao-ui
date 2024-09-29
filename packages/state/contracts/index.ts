@@ -144,3 +144,7 @@ export {
   DaoVotingSgCommunityNftClient,
   DaoVotingSgCommunityNftQueryClient,
 } from './DaoVotingSgCommunityNft'
+export {
+  ShitStrapClient,
+  ShitStrapQueryClient,
+} from './ShitStrap'

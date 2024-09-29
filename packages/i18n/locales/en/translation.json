@@ -54,6 +54,8 @@
     "addAttribute": "Add attribute",
     "addChains": "Add chains",
     "addCollection": "Add collection",
+    "addEligibleAsset": "Add eligible asset to exchange for shit",
+    "makeShitStrapPayment": "Make Shitstrap Payment",
     "addFile": "Add file",
     "addImage": "Add image",
     "addMember": "Add a member",
@@ -251,6 +253,12 @@
       "restake": "Restake",
       "stake": "Stake",
       "unstake": "Unstake"
+    },
+    "shitstrapPaymentMode": {
+      "payment": "Payment",
+      "flush": "Flush",
+      "refund": "Refund",
+      "create": "Create"
     },
     "stopConnecting": "Stop connecting",
     "stopFollowing": "Stop following",
@@ -632,6 +640,8 @@
     "earlyExecuteTooltip": "If the vetoer decides NOT to veto a passed proposal, this allows them to execute the proposal instead, effectively skipping the timelock duration and speeding up the governance process.",
     "editValidatorMessage": "Edit validator message",
     "editValidatorMessageTooltip": "Update the information of a validator controlled by your DAO.",
+    "eligibleAssets": "Token and its specific shit conversion ratio",
+    "tokenToShitstrap": "Which token would you like to shit out?",
     "encodedMessages": "List of encoded messages",
     "encodedMessagesTooltip": "Provide a list of protobuf encoded messages with the values in base64.",
     "enterImageUrl": "Enter image URL",
@@ -1257,6 +1267,9 @@
     "postedOnDate": "Posted on {{date}}",
     "preReleaseExplanation": "This is a pre-release version of DAO DAO running on the {{chain}} chain.",
     "pressDescriptionTooltip": "This description will be included with the post's NFT metadata and may show up in wallets or other places. Think of it as a brief description of the post.",
+    "previewShitstrapPayment": "Review the payment conversion results.",
+    "shitstrapPaymentTitle": "Shitstrap Payment",
+    "shitstrapPaymentDescription": "Description: ",
     "priceHistoryRange_day": "Every 5 minutes for the past day",
     "priceHistoryRange_hour": "Every 5 minutes for the past hour",
     "priceHistoryRange_month": "Every hour for the past month",
@@ -1468,7 +1481,9 @@
     "vestingIsCancellableByOwner_dao": "This vesting payment can be cancelled by the DAO after it's created.",
     "vestingIsCancellableByOwner_wallet": "You will be able to cancel this vesting payment after it's created.",
     "vestingManagerExplanation_action": "To create vesting payments on a chain, the DAO must have an account and vesting payment manager on that chain. Create vesting payment managers on any of the available chains below, or create cross-chain accounts so you can set up managers in another proposal.",
+    "shitstrapManagerExplanation_action": "To create shitstrap payments on a chain, the DAO must have an account and shitstrap manager on that chain. Create shitstrap managers on any of the available chains below, or create cross-chain accounts so you can set up managers in another proposal.",
     "vestingManagerExplanation_daoCreation": "To create vesting payments on a chain, the DAO must have an account and vesting payment manager on that chain. Since you are creating a DAO, you can only set up vesting on the DAO's home chain for now. Create cross-chain accounts via proposals once the DAO is created in order to manage vesting payments on other chains.",
+    "shitstrapManagerExplanation_daoCreation": "To create shitstrap instances, the DAO must have an account and shitstrap manager on that chain. Since you are creating a DAO, you can only set up a shitstrap on the DAO's home chain for now. Create cross-chain accounts via proposals once the DAO is created in order to manage shitstrap instances on other chains.",
     "vestingManagerNeeded": "To create a vesting payment on {{chain}}, the DAO must first setup a vesting payment manager by passing a proposal with the setup action. Click the button to add the setup action and remove this vesting payment.",
     "vestingNotCancellable": "This vesting payment cannot be cancelled later.",
     "vestingPaymentsDescription": "A vesting payment distributes funds according to any schedule you choose, and the DAO can enable or disable early cancelation.",
@@ -1785,6 +1800,7 @@
     "manageIcas": "Manage ICAs",
     "manageMembers": "Manage Members",
     "managePayroll": "Manage Payroll",
+    "manageShitstrap": "Create Shitstrap Instance",
     "manageStaking": "Manage Staking",
     "manageStorageItems": "Manage Storage Items",
     "manageSubDaoPause": "Manage SubDAO Pause",
@@ -1838,12 +1854,11 @@
     "numNfts_other": "{{count}} NFTs",
     "numNotifications_one": "{{count}} notification",
     "numNotifications_other": "{{count}} notifications",
+    "numPending": "{{count}} pending",
     "numPendingItems_one": "{{count}} pending item",
     "numPendingItems_other": "{{count}} pending items",
     "numSubDaos_one": "{{count}} SubDAO",
     "numSubDaos_other": "{{count}} SubDAOs",
-    "numTasks_one": "{{count}} task",
-    "numTasks_other": "{{count}} tasks",
     "openProposals": "Open proposals",
     "orChooseAStructure": "...or choose a structure",
     "other": "Other",
@@ -1912,6 +1927,7 @@
     "search": "Search",
     "selectNftToBurn": "Select NFT To Burn",
     "selectNftToTransfer": "Select NFT To Transfer",
+    "shitstrapAction": "Select shitstrap action",
     "send": "Send",
     "setAdminToParent": "Set admin to {{parent}}",
     "setItem": "Set Item",
@@ -2064,12 +2080,14 @@
     "mint_nft": "Display an NFT collection with a button to mint new NFTs.",
     "press": "Publish posts to your DAO's press page.",
     "retroactive": "Reward contributors for work they've already done. Vote on how to distribute payments in regular cycles.",
-    "vesting": "Vest funds to contributors at a constant rate, similar to a salary."
+    "vesting": "Vest funds to contributors at a constant rate, similar to a salary.",
+    "shitstrap": "Perform OTC swaps at custom ratios with specific assets."
   },
   "widgetTitle": {
     "mint_nft": "Mint NFT",
     "press": "Press",
     "retroactive": "Retroactive Compensation",
-    "vesting": "Vesting Payments"
+    "vesting": "Vesting Payments",
+    "shitstrap": "Shitstrap Instances"
   }
 }

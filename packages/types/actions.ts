@@ -106,6 +106,10 @@ export enum ActionKey {
   // Become SubDAO
   AcceptSubDao = 'acceptSubDao',
   BecomeSubDao = 'becomeSubDao',
+  // Shitstrap
+  CreateShitStrap = 'createShitstrap',
+  ManageShitstrap = 'manageShitstrap',
+  MakeShitstrapPayment = 'makeShitstrapPayment'
 }
 
 export type ActionAndData = {

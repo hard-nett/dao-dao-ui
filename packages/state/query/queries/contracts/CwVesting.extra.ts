@@ -14,7 +14,6 @@ import { tokenQueries } from '../token'
 import { cw1WhitelistExtraQueries } from './Cw1Whitelist.extra'
 import { cwPayrollFactoryExtraQueries } from './CwPayrollFactory.extra'
 import { cwVestingQueries } from './CwVesting'
-
 /**
  * Fetch info for a vesting payment.
  */
@@ -93,23 +92,23 @@ export const fetchVestingPaymentInfo = async (
 
         const cw1WhitelistAdmins = owner
           ? await queryClient.fetchQuery(
-              cw1WhitelistExtraQueries.adminsIfCw1Whitelist(queryClient, {
-                chainId,
-                address: owner,
-              })
-            )
+            cw1WhitelistExtraQueries.adminsIfCw1Whitelist(queryClient, {
+              chainId,
+              address: owner,
+            })
+          )
           : null
 
         return cw1WhitelistAdmins
           ? {
-              address: owner,
-              isCw1Whitelist: true,
-              cw1WhitelistAdmins,
-            }
+            address: owner,
+            isCw1Whitelist: true,
+            cw1WhitelistAdmins,
+          }
           : {
-              address: owner,
-              isCw1Whitelist: false,
-            }
+            address: owner,
+            isCw1Whitelist: false,
+          }
       }),
     // TODO(vesting): add stake slash history analysis back
     {
@@ -217,12 +216,12 @@ export const fetchVestingPaymentInfo = async (
     actualSlashed === undefined
       ? '0'
       : (
-          BigInt(total) -
-          BigInt(vest.claimed) -
-          BigInt(actualStaked) -
-          BigInt(actualUnstaking) -
-          actualSlashed
-        ).toString()
+        BigInt(total) -
+        BigInt(vest.claimed) -
+        BigInt(actualStaked) -
+        BigInt(actualUnstaking) -
+        actualSlashed
+      ).toString()
 
   const completed =
     (vest.status === 'funded' ||
@@ -236,23 +235,23 @@ export const fetchVestingPaymentInfo = async (
     // Constant is used when a vest is canceled.
     'constant' in vest.vested
       ? [
-          {
-            timestamp: startTimeMs,
-            amount: convertMicroDenomToDenomWithDecimals(
-              vest.vested.constant.y,
-              token.decimals
-            ),
-          },
-          {
-            timestamp: startTimeMs,
-            amount: convertMicroDenomToDenomWithDecimals(
-              vest.vested.constant.y,
-              token.decimals
-            ),
-          },
-        ]
+        {
+          timestamp: startTimeMs,
+          amount: convertMicroDenomToDenomWithDecimals(
+            vest.vested.constant.y,
+            token.decimals
+          ),
+        },
+        {
+          timestamp: startTimeMs,
+          amount: convertMicroDenomToDenomWithDecimals(
+            vest.vested.constant.y,
+            token.decimals
+          ),
+        },
+      ]
       : 'saturating_linear' in vest.vested
-      ? [
+        ? [
           {
             timestamp: startTimeMs + vest.vested.saturating_linear.min_x * 1000,
             amount: convertMicroDenomToDenomWithDecimals(
@@ -268,7 +267,7 @@ export const fetchVestingPaymentInfo = async (
             ),
           },
         ]
-      : vest.vested.piecewise_linear.steps.reduce(
+        : vest.vested.piecewise_linear.steps.reduce(
           (acc, [seconds, amount], index): VestingStep[] => {
             // Ignore first step if hardcoded 0 amount at 1 second.
             if (index === 0 && seconds === 1 && amount === '0') {

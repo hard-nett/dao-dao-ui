@@ -7,6 +7,7 @@ import { makeEnableRetroactiveCompensationAction } from './EnableRetroactiveComp
 import { makeManageCw20Action } from './ManageCw20'
 import { makeManageStakingAction } from './ManageStaking'
 import { makeManageVestingAction } from './ManageVesting'
+import { makeManageShitstrapAction } from './ManageShitstrap'
 import { makeSpendAction } from './Spend'
 import {
   makePerformTokenSwapAction,
@@ -25,6 +26,7 @@ export const makeTreasuryActionCategory: ActionCategoryMaker = ({
     context: context.type,
   }),
   actionMakers: [
+    makeManageShitstrapAction,
     makeSpendAction,
     makeManageStakingAction,
     makeManageVestingAction,

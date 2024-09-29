@@ -607,7 +607,7 @@ export const BeginVesting: ActionComponent<BeginVestingOptions> = ({
                       (fieldNamePrefix +
                         `steps.${index}.percent`) as `steps.${number}.percent`
                     }
-                    max={100}
+                    max={undefined}
                     min={0}
                     register={register}
                     setValue={setValue}

@@ -10,6 +10,7 @@ import { makeCommunityPoolSpendAction } from './treasury/CommunityPoolSpend'
 import { makeConfigureVestingPaymentsAction } from './treasury/ConfigureVestingPayments'
 import { makeManageStakingAction } from './treasury/ManageStaking'
 import { makeManageVestingAction } from './treasury/ManageVesting'
+import { makeManageShitstrapAction } from './treasury/ManageShitstrap'
 import { makeSpendAction } from './treasury/Spend'
 
 export const makeCommonlyUsedCategory: ActionCategoryMaker = ({ t }) => ({
@@ -28,5 +29,6 @@ export const makeCommonlyUsedCategory: ActionCategoryMaker = ({ t }) => ({
     makeExecuteAction,
     makeInstantiateAction,
     makeConfigureVestingPaymentsAction,
+    makeManageShitstrapAction,
   ],
 })

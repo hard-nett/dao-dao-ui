@@ -3,6 +3,7 @@ import { Widget } from '@dao-dao/types'
 import {
   PressWidget,
   RetroactiveCompensationWidget,
+  ShitStrapWidget,
   VestingPaymentsWidget,
 } from './widgets'
 
@@ -13,6 +14,7 @@ export const getWidgets = (chainId: string): readonly Widget[] =>
     VestingPaymentsWidget,
     RetroactiveCompensationWidget,
     PressWidget,
+    ShitStrapWidget,
   ].filter(
     (widget) => !widget.isChainSupported || widget.isChainSupported(chainId)
   )

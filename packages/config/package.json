@@ -1,9 +1,9 @@
 {
   "name": "@dao-dao/config",
-  "version": "2.5.0-rc.1",
+  "version": "2.5.0-rc.3",
   "license": "BSD-3-Clause-Clear",
   "scripts": {
-    "cwgen": "ts-node ./scripts/cwgen.ts"
+    "cwgen": "tsx ./scripts/cwgen.ts"
   },
   "dependencies": {
     "@tailwindcss/typography": "^0.5.1",
