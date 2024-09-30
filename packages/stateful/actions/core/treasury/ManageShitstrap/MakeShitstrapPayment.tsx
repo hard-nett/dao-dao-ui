@@ -1,4 +1,4 @@
-import { ActionChainContextType, ActionComponent, ActionContextType, ActionKey, AddressInputProps, GenericTokenBalanceWithOwner, LoadingDataWithError, StatefulEntityDisplayProps, TokenType } from "@dao-dao/types"
+import { ActionChainContextType, ActionComponent, ActionContextType, ActionKey, AddressInputProps, GenericToken, GenericTokenBalanceWithOwner, LoadingDataWithError, StatefulEntityDisplayProps, TokenType } from "@dao-dao/types"
 import { ShitstrapPaymentWidgetData } from "../../../../widgets/widgets/ShitStrap/types"
 import { ComponentType } from "react"
 import { Button, ChainProvider, IconButton, InputErrorMessage, InputLabel, TokenInput } from "@dao-dao/stateless"
@@ -15,7 +15,7 @@ import { cwShitstrapExtraQueries } from "@dao-dao/state/query"
 
 export type MakeShitstrapPaymentData = {
     chainId: string
-    shitDenom: string
+    shitToken?: GenericToken
     amount: string
     eligibleAssets: PossibleShit[]
 }
@@ -61,36 +61,34 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
     // Use info passed into props as fallback, since it came from the list query;
     // the individual query updates more frequently.
     const freshInfo = useQueryLoadingDataWithError(
-      cwShitstrapExtraQueries.info(queryClient, {
-        chainId: nativeChainId,
-        address: fallbackInfo.shitstrapContractAddr,
-      })
+        cwShitstrapExtraQueries.info(queryClient, {
+            chainId: nativeChainId,
+            address: fallbackInfo.shitstrapContractAddr,
+        })
     )
     const shitstrapInfo =
-      freshInfo.loading || freshInfo.errored ? fallbackInfo : freshInfo.data
+        freshInfo.loading || freshInfo.errored ? fallbackInfo : freshInfo.data
 
-      
+
     const { control, register, watch, setValue, setError, clearErrors } =
         useFormContext<MakeShitstrapPaymentData>()
 
     // set chain id to form 
     const chainId = watch((fieldNamePrefix + 'chainId') as 'chainId')
-    // const startDate = !isNaN(parsedStartDate)
-    //     ? new Date(parsedStartDate)
-    //     : undefined
 
     // form value of the token selected for the shitstrap
-    const watchShitmosDenomOrAddress = watch(
-        (fieldNamePrefix + 'shitDenom') as 'shitDenom'
+    const watchShitToken = watch(
+        (fieldNamePrefix + 'shitToken') as 'shitToken'
     )
     // set token or denom of token to shit
     const amountToShit = watch(
         (fieldNamePrefix + 'amount') as 'amount'
     )
 
-    const selectedToken = tokens.find(
-        ({ token: { denomOrAddress } }) => denomOrAddress === watchShitmosDenomOrAddress
-    )
+    const selectedToken = watchShitToken
+        ? tokens.find(
+            ({ token: { denomOrAddress } }) => denomOrAddress === watchShitToken.denomOrAddress
+        ) : undefined
 
     const configureCreateShitStrapActionDefaults = useActionForKey(
         ActionKey.MakeShitstrapPayment
@@ -155,7 +153,7 @@ export const MakeShitstrapPayment: ActionComponent<MakeShitstrapPaymentOptions> 
 
                         <div className="flex flex-row gap-1">
 
-                            {shitstrapInfo?.eligibleAssets.map(({ shit_rate, token }, index, ) => (
+                            {shitstrapInfo?.eligibleAssets.map(({ shit_rate, token }, index,) => (
                                 <TokenInput
                                     amount={{
                                         watch,

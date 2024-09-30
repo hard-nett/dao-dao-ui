@@ -50,7 +50,7 @@ export const ShitstrapPaymentLine = ({
                                 'b h-8 cursor-pointer grid-cols-2 items-center gap-3 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed',
                                 !transparentBackground && 'bg-background-tertiary'
                             )} key={index}>
-                                {'native' in asset.token ? (
+
                                     <TokenAmountDisplay
                                         amount={convertMicroDenomToDenomWithDecimals(
                                             asset.shit_rate,
@@ -58,20 +58,8 @@ export const ShitstrapPaymentLine = ({
                                         )}
                                         className="body-text truncate font-mono"
                                         decimals={0}
-                                        symbol={asset.token.native}
-                                    />
-                                ) : 'cw20' in asset.token ? (
-                                    <TokenAmountDisplay
-                                        amount={convertMicroDenomToDenomWithDecimals(
-                                            asset.shit_rate,
-                                            // assuming you have a function to get the decimals for a cw20 token
-                                            6
-                                        )}
-                                        className="body-text truncate font-mono"
-                                        decimals={6}
-                                        symbol={asset.token.cw20}
-                                    />
-                                ) : null}
+                                        symbol={'native' in asset.token? asset.token.native : asset.token.cw20}
+                                        />
                             </div>
                         ))
                     ) : (

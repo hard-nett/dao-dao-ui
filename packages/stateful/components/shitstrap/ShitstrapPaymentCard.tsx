@@ -27,8 +27,11 @@ export const ShitstrapPaymentCard = ({
 
   const { t } = useTranslation()
   const { chain_id: chainId } = useChain()
-  const { goToDaoProposal } = useDaoNavHelpers()
 
+  type MakePaymentCard = {
+    toShit: string,
+    amount: string,
+  }
   const {
     address: walletAddress = '',
     isWalletConnected,
@@ -38,6 +41,7 @@ export const ShitstrapPaymentCard = ({
   })
 
   const tokenBalances = useTokenBalances()
+
 
   const queryClient = useQueryClient()
   // Use info passed into props as fallback, since it came from the list query;
@@ -63,64 +67,13 @@ export const ShitstrapPaymentCard = ({
     shitstrapContractAddr,
   } = shitstrapInfo
 
-  const { entity: ownerEntity } = useEntity(owner)
-  const ownerisDao =
-    !ownerEntity.loading && ownerEntity.data.type === EntityType.Dao
+
 
   const shitstrapPayment = useMakeShitstrapPayment({
     contractAddress: shitstrapContractAddr,
     sender: walletAddress
   })
 
-
-  const [makingShitstrapPayment, setMakingShitstrapPayment] = useState(false)
-  const [flushingShitstrap, setFlushingShitstrap] = useState(false)
-
-
-  const onShitstrapPayment = async () => {
-    // Should never happen. 
-    try {
-      if (ownerisDao) {
-        setMakingShitstrapPayment(true)
-        await goToDaoProposal(ownerEntity.data.address, 'makeShistrapPayment', {
-          prefill: getDaoProposalSinglePrefill({
-            actions: [
-              {
-                actionKey: ActionKey.Execute,
-                data: {
-                  chainId,
-                  address: shitstrapContractAddr,
-                  message: JSON.stringify(
-                    {
-                      shistrap: {
-                        shit: []
-                      },
-                    },
-                    null,
-                    2
-                  ),
-                  funds: [],
-                  cw20: false,
-                },
-              },
-            ],
-          }),
-        })
-      }
-
-    } catch (err) {
-      console.error(err)
-      toast.error(processError(err))
-    } finally {
-      setMakingShitstrapPayment(false)
-    }
-  }
-  const [showShitstrapPaymentModal, setShowShitstrapPaymentModal] = useState(false)
-
-  type MakePaymentCard = {
-    toShit: string,
-    amount: string,
-  }
 
   const form = useForm<MakePaymentCard>({
     defaultValues: {
@@ -130,20 +83,15 @@ export const ShitstrapPaymentCard = ({
     mode: 'onChange',
   })
 
-
   return (
     // a. add one token select to select to to pay for a shitstrap. only should be one of eligiibleAssets from selected shitstrap
     <>
       <FormProvider{...form}>
         <StatelessShitstrapPaymentCard
-          owner={owner}
-          ownerEntity={ownerEntity}
           shitstrapInfo={shitstrapInfo}
-          eligibleAssets={eligibleAssets}
           ButtonLink={ButtonLink}
           EntityDisplay={EntityDisplay}
           isWalletConnected={isWalletConnected}
-          onShitstrapPayment={onShitstrapPayment}
           tokens={tokenBalances.loading ? [] : tokenBalances.data} />
       </FormProvider >
     </>

@@ -2,11 +2,11 @@ import { ActionComponent, ActionContextType, ActionKey, ButtonLinkProps, ButtonP
 import { ComponentType, useEffect, useMemo, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { DepositEmoji } from "../emoji"
-import { abbreviateString, convertMicroDenomToDenomWithDecimals } from "@dao-dao/utils"
+import { abbreviateString, convertMicroDenomToDenomWithDecimals, getDaoProposalSinglePrefill, processError } from "@dao-dao/utils"
 import { ButtonPopup } from "../popup"
 import { Button, ButtonLink } from "../buttons"
 import { ExpandCircleDownOutlined } from "@mui/icons-material"
-import { useTranslatedTimeDeltaFormatter } from "../../hooks"
+import { useDaoNavHelpers, useTranslatedTimeDeltaFormatter } from "../../hooks"
 import {
     NativeCoinSelector,
     SegmentedControls,
@@ -20,13 +20,18 @@ import { Tooltip } from "../tooltip"
 import { MakeShitstrapPaymentData, MakeShitstrapPaymentOptions } from "@dao-dao/stateful/actions/core/treasury/ManageShitstrap/MakeShitstrapPayment"
 import { FormProvider, useForm, useFormContext } from "react-hook-form"
 import { useActionForKey, useActionOptions } from "@dao-dao/stateful/actions"
+import { Decimal } from '@cosmjs/math';
+import { useEntity } from "@dao-dao/stateful"
+import toast from "react-hot-toast"
+import { UncheckedDenom } from "@dao-dao/types/contracts/DaoPreProposeSingle"
 
+type MakePaymentCard = {
+    shitToken: string,
+    amount: string,
+}
 
 export type ShitstrapPaymentCardProps = {
     shitstrapInfo: ShitstrapInfo
-    owner: string
-    ownerEntity: LoadingData<Entity>
-    eligibleAssets: PossibleShit[]
     ButtonLink: ComponentType<ButtonLinkProps>
     EntityDisplay: ComponentType<StatefulEntityDisplayProps>
     tokens: GenericTokenBalanceWithOwner[]
@@ -36,7 +41,6 @@ export type ShitstrapPaymentCardProps = {
     isWalletConnected: boolean
     transparentBackground?: boolean
     shitting?: boolean
-    onShitstrapPayment?: () => void
     onFlush?: () => void
     onAddToken?: () => void
     onClose?: () => void
@@ -45,22 +49,38 @@ export type ShitstrapPaymentCardProps = {
 export const ShitstrapPaymentCard = ({
     tokens, // balance of connected wallet or dao
     shitstrapInfo, // shitstrap info
-    onShitstrapPayment,
     onClose,
     shitting,
     isWalletConnected,
     EntityDisplay,
-    eligibleAssets,
-    ownerEntity,
     ButtonLink,
     transparentBackground,
 }: ShitstrapPaymentCardProps) => {
-
     const { t } = useTranslation()
     const { chain_id: chainId } = useChain()
     const { context } = useActionOptions()
     const [copied, setCopied] = useState(false)
     const [mode, setMode] = useState(ShitstrapPaymentMode.Payment)
+    const [makingShitstrapPayment, setMakingShitstrapPayment] = useState(false)
+    const [flushingShitstrap, setFlushingShitstrap] = useState(false)
+    const [showShitstrapPaymentModal, setShowShitstrapPaymentModal] = useState(false)
+    const { goToDaoProposal } = useDaoNavHelpers()
+
+
+    const { entity: ownerEntity } = useEntity(tokens[0].owner.address)
+    const ownerisDao =
+        !ownerEntity.loading && ownerEntity.data.type === EntityType.Dao
+
+
+
+    const form = useForm<MakePaymentCard>({
+        defaultValues: {
+            shitToken: '',
+            amount: '',
+        },
+        mode: 'onChange',
+    })
+
     // Debounce clearing copied.
     useEffect(() => {
         const timeout = setTimeout(() => setCopied(false), 2000)
@@ -76,226 +96,297 @@ export const ShitstrapPaymentCard = ({
     }
 
     // create form for selecting token and amount 
-    const { register, control, watch, setValue, setError, clearErrors } = useFormContext()
+    const { register, control, watch, setValue, setError, clearErrors } = useFormContext<MakeShitstrapPaymentData>()
 
-    const watchShitmosDenomOrAddress = watch(
-        ('payment.' + 'denomOrAddress') as 'denomOrAddress'
+    const watchShitToken = watch(
+        ('payment.' + 'shitToken') as 'shitToken'
     )
     const watchAmount = watch(
         ('payment.' + 'amount') as 'amount'
     )
 
-    const selectedToken = tokens.find(
-        ({ token: { denomOrAddress } }) => denomOrAddress === watchShitmosDenomOrAddress
-    )
+    const [initialValueSet, setInitialValueSet] = useState(false);
 
-    const selectedDecimals = selectedToken?.token.decimals ?? 0
-    const selectedMicroBalance = selectedToken?.balance ?? 0
-    const selectedBalance = convertMicroDenomToDenomWithDecimals(
+    useEffect(() => {
+        if (watchShitToken && !initialValueSet) {
+            setInitialValueSet(true);
+        }
+    }, [watchShitToken]);
+
+    const renderValues = initialValueSet && watchShitToken;
+
+    const selectedToken = renderValues
+        ? tokens.find(
+            ({ token: { denomOrAddress } }) => denomOrAddress === watchShitToken.denomOrAddress
+        ) : undefined;
+
+    const eligibleAsset = renderValues ?
+        shitstrapInfo.eligibleAssets.find((asset) =>
+            ('native' in asset.token && asset.token.native === watchShitToken.denomOrAddress)
+            || ('cw20' in asset.token && asset.token.cw20 === watchShitToken.denomOrAddress)
+        )
+        : undefined;
+
+    const estimatedToken = eligibleAsset ? (1 / Decimal.fromAtomics(eligibleAsset.shit_rate, 6).toFloatApproximation()) * parseInt(watchAmount) : 1;
+
+    const selectedDecimals = renderValues ? selectedToken?.token.decimals ?? 0 : 0
+    const selectedMicroBalance = renderValues ? selectedToken?.balance ?? 0 : 0
+    const selectedBalance = renderValues ? convertMicroDenomToDenomWithDecimals(
         selectedMicroBalance,
         selectedDecimals
-    )
-
-    const insufficientBalanceI18nKey =
-        context.type === ActionContextType.Wallet
+    ) : 0
+    const insufficientBalanceI18nKey = renderValues
+        ? (context.type === ActionContextType.Wallet
             ? 'error.insufficientWalletBalance'
-            : 'error.cantSpendMoreThanTreasury'
+            : 'error.cantSpendMoreThanTreasury')
+        : '';
 
+        const shitAction = useActionForKey(ActionKey.MakeShitstrapPayment)
+        const shitActionDefaults = shitAction?.useDefaults()
+    const onShitstrapPayment = async () => {
+        try {
+            if (ownerisDao && watchShitToken && shitAction) {
+                console.log(watchShitToken.denomOrAddress)
+                setMakingShitstrapPayment(true)
+                let test = goToDaoProposal(ownerEntity.data.address, 'create', {
+                    prefill: getDaoProposalSinglePrefill({
+                        actions: [
+                            {
+                                actionKey: shitAction.key,
+                                data: {
+                                    chainId,
+                                    address: shitstrapInfo.shitstrapContractAddr,
+                                    message: JSON.stringify(
+                                        {
+                                            shistrap: {
+                                                shit: { native: watchShitToken.denomOrAddress }
+                                            },
+                                        },
+                                        null,
+                                        2
+                                    ),
+                                    funds: [{
+                                        denom: watchShitToken.denomOrAddress,
+                                        amount: parseInt(watchAmount)
+                                    }],
+                                    cw20: false,
+                                },
+                            },
+                        ],
+                    }),
+                })
+                console.log(test)
+                await test
+            }
 
-    const configureCreateShitStrapActionDefaults = useActionForKey(
-        ActionKey.MakeShitstrapPayment
-    )?.useDefaults()
-
-
+        } catch (err) {
+            console.error(err)
+            toast.error(processError(err))
+        } finally {
+            setMakingShitstrapPayment(false)
+        }
+    }
 
     return (
+        <>
+            <div className="rounded-lg bg-background-tertiary">
 
-        <div className="rounded-lg bg-background-tertiary">
-
-            {/* Description */}
-            <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
-                <div className="flex flex-row items-start justify-between gap-8">
+                {/* Description */}
+                <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
+                    <div className="flex flex-row items-start justify-between gap-8">
+                        <p className="link-text">
+                            {t('info.shitstrapPaymentTitle')}
+                        </p>
+                    </div>
                     <p className="link-text">
-                        {t('info.shitstrapPaymentTitle')}
+                        {t('info.shitstrapPaymentDescription')}
                     </p>
                 </div>
-                <p className="link-text">
-                    {t('info.shitstrapPaymentDescription')}
-                </p>
-            </div>
 
-            <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
-                <Tooltip title={"test"}>
-                    <p className="caption-text leading-5 text-text-body">
-                        Eligible Assets
-                    </p>
-                </Tooltip>
-                <div className="flex flex-row items-start justify-between gap-8">
-                    {/* leading-5 to match link-text's line-height. */}
-                    {eligibleAssets && eligibleAssets.length > 0 ? (
-                        eligibleAssets.map((asset, index) => (
-                            <div className={clsx(
-                                'b h-8 cursor-pointer grid-cols-2 items-center gap-3 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed',
-                                !transparentBackground && 'bg-background-tertiary'
-                            )} key={index}>
-                                {'native' in asset.token ? (
+                <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
+                    <Tooltip title={"test"}>
+                        <p className="caption-text leading-5 text-text-body">
+                            Eligible Assets
+                        </p>
+                    </Tooltip>
+                    <div className="flex flex-row items-start justify-between gap-8">
+                        {/* leading-5 to match link-text's line-height. */}
+                        {shitstrapInfo.eligibleAssets && shitstrapInfo.eligibleAssets.length > 0 ? (
+                            shitstrapInfo.eligibleAssets.map((asset, index) => (
+                                <div className={clsx(
+                                    'b h-8 cursor-pointer grid-cols-2 items-center gap-3 rounded-lg py-2 px-3 transition hover:bg-background-interactive-hover active:bg-background-interactive-pressed',
+                                    !transparentBackground && 'bg-background-tertiary'
+                                )} key={index}>
+
                                     <TokenAmountDisplay
-                                        prefix="ratio: "
-                                        suffix={`, for every 1 ${shitstrapInfo.shit.denomOrAddress}`}
+                                        prefix="for every: "
+                                        suffix={`, recieve 1 ${shitstrapInfo.shit.denomOrAddress}`}
                                         amount={convertMicroDenomToDenomWithDecimals(
                                             asset.shit_rate,
                                             0
                                         )}
                                         className="body-text truncate font-mono"
                                         decimals={0}
-                                        symbol={asset.token.native}
+                                        symbol={'native' in asset.token ? asset.token.native : asset.token.cw20}
                                     />
-                                ) : 'cw20' in asset.token ? (
-                                    <TokenAmountDisplay
-                                        amount={convertMicroDenomToDenomWithDecimals(
-                                            asset.shit_rate,
-                                            // assuming you have a function to get the decimals for a cw20 token
-                                            6
-                                        )}
-                                        className="body-text truncate font-mono"
-                                        decimals={6}
-                                        symbol={asset.token.cw20}
-                                    />
-                                ) : null}
-                            </div>
-                        ))
-                    ) : (
-                        <p>{t('info.unknown')}</p>
-                    )}
 
+                                </div>
+                            ))
+                        ) : (
+                            <p>{t('info.unknown')}</p>
+                        )}
+
+                    </div>
                 </div>
-            </div>
-            <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
+                <div className="flex flex-col gap-3 border-t border-border-secondary py-4 px-6">
 
-                {t(`title.shitstrapAction`)}
-                <Tooltip title={"Select the shit action you wish to perform. Only the owner of the shit may flush. You shit, you flush."}>
-                    <div className="mt-5 flex w-full flex-col gap-4">
-                        <SegmentedControls
-                            onSelect={setMode}
-                            selected={mode}
-                            tabs={[
+                    {t(`title.shitstrapAction`)}
+                    <Tooltip title={"Select the shit action you wish to perform. Only the owner of the shit may flush. You shit, you flush."}>
+                        <div className="mt-5 flex w-full flex-col gap-4">
+                            <SegmentedControls
+                                onSelect={setMode}
+                                selected={mode}
+                                tabs={[
+                                    {
+                                        label: t('button.shitstrapPaymentMode.payment'),
+                                        value: ShitstrapPaymentMode.Payment,
+                                    },
+                                    {
+                                        label: t('button.shitstrapPaymentMode.flush'),
+                                        value: ShitstrapPaymentMode.Flush,
+                                    },
+                                ]}
+                            />
+
+                        </div>
+                    </Tooltip>
+
+                    {mode === ShitstrapPaymentMode.Payment ? (
+                        <TokenInput
+                            allowCustomToken={false}
+                            amount={{
+                                watch,
+                                setValue,
+                                register,
+                                fieldName: ('payment.' + 'amount') as 'amount',
+                                error: undefined,
+                                min: 0,
+                                max: 999999999999999999,
+                                step: convertMicroDenomToDenomWithDecimals(1, 6),
+                                validations: [
+                                    (amount) =>
+                                        amount <= selectedBalance ||
+                                        t(insufficientBalanceI18nKey, {
+                                            amount: selectedBalance.toLocaleString(undefined, {
+                                                maximumFractionDigits: selectedDecimals,
+                                            }),
+                                            tokenSymbol:
+                                                selectedToken?.token.symbol ??
+                                                t('info.token').toLocaleUpperCase(),
+                                        }),
+                                ],
+                            }}
+                            onSelectToken={(token) => {
+                                setValue(('payment.' + 'shitToken') as 'shitToken', token);
+                            }}
+                            readOnly={shitting}
+                            selectedToken={selectedToken?.token}
+
+                            showChainImage
+                            tokens={
                                 {
-                                    label: t('button.shitstrapPaymentMode.payment'),
-                                    value: ShitstrapPaymentMode.Payment,
-                                },
-                                {
-                                    label: t('button.shitstrapPaymentMode.flush'),
-                                    value: ShitstrapPaymentMode.Flush,
-                                },
-                            ]}
+                                    loading: false,
+                                    data: tokens
+                                        .filter(({ token }) =>
+                                            shitstrapInfo.eligibleAssets.some((asset) => {
+                                                if ('native' in asset.token) {
+                                                    return asset.token.native === token.denomOrAddress;
+                                                } else if ('cw20' in asset) {
+                                                    return asset.token.cw20 === token.denomOrAddress;
+                                                } else {
+                                                    return false;
+                                                }
+                                            })
+                                        )
+                                        .map(({ owner, balance, token }) => ({
+                                            ...token,
+                                            owner,
+                                            description:
+                                                t('title.balance') +
+                                                ': ' + convertMicroDenomToDenomWithDecimals(
+                                                    balance,
+                                                    token.decimals
+                                                ).toLocaleString(undefined, {
+                                                    maximumFractionDigits: token.decimals,
+                                                })
+                                            ,
+                                        })),
+                                }
+                            }
                         />
 
-                    </div>
-                </Tooltip>
-
-                {mode === ShitstrapPaymentMode.Payment ? (
-                    <TokenInput
-                        allowCustomToken={false}
-                        amount={{
-                            watch,
-                            setValue,
-                            register,
-                            fieldName: ('payment.' + 'amount') as 'amount',
-                            error: undefined,
-                            min: 0,
-                            max: 999999999999999999,
-                            step: convertMicroDenomToDenomWithDecimals(1, 6),
-                            validations: [
-                                (amount) =>
-                                    amount <= selectedBalance ||
-                                    t(insufficientBalanceI18nKey, {
-                                        amount: selectedBalance.toLocaleString(undefined, {
-                                            maximumFractionDigits: selectedDecimals,
-                                        }),
-                                        tokenSymbol:
-                                            selectedToken?.token.symbol ??
-                                            t('info.token').toLocaleUpperCase(),
-                                    }),
-                            ],
-                        }}
-                        onSelectToken={(token) => {
-                            setValue(('payment.' + 'denomOrAddress') as 'denomOrAddress', `${token?.denomOrAddress}`);
-                        }}
-                        readOnly={shitting}
-                        selectedToken={selectedToken?.token}
-
-                        showChainImage
-                        tokens={
-                            {
-                                loading: false,
-                                data: tokens.map(({ owner, balance, token }) => ({
-                                    ...token,
-                                    owner,
-                                    description:
-                                        t('title.balance') +
-                                        ': ' +
-                                        convertMicroDenomToDenomWithDecimals(
-                                            balance,
-                                            token.decimals
-                                        ).toLocaleString(undefined, {
-                                            maximumFractionDigits: token.decimals,
-                                        }),
-                                })),
-                            }
-                        }
-                    />
 
 
+                    ) : null}
+                    {mode === ShitstrapPaymentMode.Flush ? (<>
 
-                ) : null}
-                {mode === ShitstrapPaymentMode.Flush ? (<></>
-                ) : null}
-                {mode === ShitstrapPaymentMode.Refund ? (<></>
-                ) : null}
-            </div>
+                        {/* describe the flush function. */}
+                    </>
+                    ) : null}
+                    {mode === ShitstrapPaymentMode.Refund ? (
+                        <>
+                            {/* describe the refund function. */}
+                        </>
 
-            {!ownerEntity.loading && (
-                <div className="flex flex-col gap-2 border-t border-border-secondary px-6 py-4">
-                    <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
+                    ) : null}
+                </div>
 
-                    <div className="flex flex-row items-center justify-between gap-8">
-                        {/* <p className="secondary-text">{t('title.staked')}</p> */}
-                        {/* <TokenAmountDisplay
-                                    amount={lazyInfo.loading ? { loading: true } : totalStaked}
+                {!ownerEntity.loading && (
+                    <div className="flex flex-col gap-2 border-t border-border-secondary px-6 py-4">
+                        <p className="link-text mb-1">{t('info.previewShitstrapPayment')}</p>
+
+                        <div className="flex flex-row items-center justify-between gap-8">
+                            <p className="secondary-text">{t('title.estimatedToShit')}</p>
+                            {estimatedToken !== 0 && (
+                                <TokenAmountDisplay
+                                    amount={estimatedToken as number}
                                     className="caption-text text-right font-mono text-text-body"
-                                    decimals={token.decimals}
-                                    symbol={token.symbol}
-                                /> */}
-                    </div>
+                                    decimals={6}
+                                    symbol={shitstrapInfo.shit.denomOrAddress}
+                                    hideSymbol={false}
+                                />
+                            )}
+                        </div>
 
-                    <div className="flex flex-row items-center justify-between gap-8">
-                        {/* <p className="secondary-text">{t('title.stakedTo')}</p> */}
+                        <div className="flex flex-row items-center justify-between gap-8">
+                            {/* <p className="secondary-text">{t('title.stakedTo')}</p> */}
 
-                    </div>
+                        </div>
 
-                    <div className="flex flex-row items-center justify-between gap-8">
-                        {/* <p className="secondary-text">{t('title.unstakingTokens')}</p>
+                        <div className="flex flex-row items-center justify-between gap-8">
+                            {/* <p className="secondary-text">{t('title.unstakingTokens')}</p>
 
 
                         </div>
 
                         <div className="flex flex-row items-center justify-between gap-8">
                             {/* <p className="secondary-text">{t('info.pendingRewards')}</p> */}
-                    </div>
+                        </div>
 
-                    {onShitstrapPayment && (
-                        <Button
-                            center
-                            className="mt-2"
-                            loading={shitting}
-                            onClick={onShitstrapPayment}
-                            variant="brand"
-                        >
-                            {t('button.makeShitStrapPayment')}
-                        </Button>
-                    )}
-                </div>
-            )}
-        </div>
+                        {onShitstrapPayment && (
+                            <Button
+                                center
+                                className="mt-2"
+                                loading={shitting}
+                                onClick={onShitstrapPayment}
+                                variant="brand"
+                            >
+                                {t('button.makeShitStrapPayment')}
+                            </Button>
+                        )}
+                    </div>
+                )}
+            </div>
+        </>
     )
 }

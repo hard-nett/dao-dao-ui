@@ -23,12 +23,13 @@ import { coins } from "@cosmjs/amino"
 import { genericTokenSelector } from "@dao-dao/state/recoil"
 import { constSelector } from "recoil"
 import { ShitstrapPaymentWidgetData, } from "../../../../widgets/widgets/ShitStrap/types"
-import { MakeShitstrapPayment } from "./MakeShitstrapPayment"
+import { MakeShitstrapPayment, MakeShitstrapPaymentData } from "./MakeShitstrapPayment"
 
 
 export type ManageShitStrapData = {
     mode: ShitstrapPaymentMode
     create: CreateShitstrapData
+    payment: MakeShitstrapPaymentData
 }
 
 const instantiateStructure = {
@@ -92,11 +93,6 @@ const Component: ComponentType<
             : nativeChainId
 
     const shitstrapInfos = useShitstrapInfoOwnedByEntity()
-
-    const didSelectVest =
-        !props.isCreating
-        &&
-        !!selectedChainId
 
     const queryClient = useQueryClient()
 
@@ -174,14 +170,14 @@ const Component: ComponentType<
                 //     errors={props.errors?.create}
                 //     fieldNamePrefix={props.fieldNamePrefix + 'payment.'}
                 //     options={{
-                //         shitstrapInfo
+                //         shitstrapInfos
                 //         widgetData,
                 //         tokens: tokenBalances.loading ? [] : tokenBalances.data,
                 //         // AddressInput,
                 //         // EntityDisplay,
                 //     }}
                 // />
-<></>
+                <></>
             ) : null}
 
         </SuspenseLoader>)
@@ -253,8 +249,9 @@ export const makeManageShitstrapAction: ActionMaker<ManageShitStrapData> = (
                     payment: {
                         chainId,
                         address: '',
-                        toShit: '',
-                        amount: ''
+                        shitToken: undefined,
+                        amount: '',
+                        eligibleAssets: [],
                     },
                     refund: {
                         chainId,
@@ -531,13 +528,13 @@ export const makeManageShitstrapAction: ActionMaker<ManageShitStrapData> = (
         return { match: false }
     }
 
-    // Don't show if vesting payment widget is not enabled (for DAOs) and this
-    // account owns no vesting payments.
+    // Don't show if shistrap payment widget is not enabled (for DAOs) and this
+    // account owns no shitstrap payments.
     const useHideFromPicker: UseHideFromPicker =
         context.type === ActionContextType.Dao
             ? // For a DAO, check if the widget is enabled or if it owns any payments.
             () => {
-                const hasWidget = useWidget(WidgetId.VestingPayments)
+                const hasWidget = useWidget(WidgetId.ShitStrap)
                 const ownedShitstrapPaymentsLoading = useShitstrapInfoOwnedByEntity()
                 const ownsShitstrapPayments =
                     !ownedShitstrapPaymentsLoading.loading &&

@@ -1,10 +1,14 @@
 ## DAO DAO UI
 
 ## TODO
-- create: display shitstrap calculations based on form values
-- payment: pass form values to either propose contract call or broadcast msg 
-- payment: display shitstrap calculations based on form values
-- payment: only display eligible tokens for shitstrap in TokenInput during shitstrap
+- ~~create: display basic shitstrap calculation based on form value~~
+- ~~payment: only display eligible tokens for shitstrap in TokenInput during shitstrap~~
+- payment: add support to select dao balance or connected wallet balance to use 
+- payment: broadcast tx if wallet, load contract execution proposal if dao
+- payment: add support for creating payment proposal
+- lines: create expandable list of eligible assets 
+- create: select any token to be used as eligible asset 
+- shistrap: add support for cw20
 
 This project creates a web UI for the [DAO DAO smart
 contracts](https://github.com/DA0-DA0/dao-contracts), enabling users to:
