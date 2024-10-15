@@ -1,7 +1,5 @@
 # Use the official Node.js image as the base
-FROM node:18  
-## FROM node:18 as builder
-
+FROM --platform=${TARGETPLATFORM} node:18
 # Set the working directory to /app
 WORKDIR /app
 
@@ -21,7 +19,7 @@ COPY . .
 WORKDIR /app/apps/sda
 
 # Install the dependencies specifically for the sda app this time
-RUN yarn install
+RUN yarn install --network-timeout 900000
 
 # prebuild  
 # WORKDIR /app/packages/state
@@ -30,9 +28,7 @@ RUN yarn install
 # WORKDIR /app/apps/sda
 
 # Build the SDA, make sure build doesnt crash 
-ENV SKIP_PREBUILD=true
 ENV NODE_OPTIONS=--max_old_space_size=8192
-
 
 # default
 RUN yarn build 

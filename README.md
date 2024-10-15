@@ -11,15 +11,10 @@
 
 ## Docker 
 
-set the image name & tag:
-```sh
-IMAGE_NAME=da0-da0/dao-dao-ui-sda:v0.0.1
-```
-
-build the image: 
+set the image name & tag. build the image: 
 ```sh
 # Make sure to set BUILDPLATFORM is set to your machines platform, and TARGETPLATFORM to the platform you aim to run this image on:
-docker-compose build --build-arg BUILDPLATFORM=linux/amd64 --build-arg TARGETPLATFORM=linux/amd64
+IMAGE_NAME=discoverdefiteam/shitstrap-dao:v0.0.2 docker-compose build --build-arg BUILDPLATFORM=linux/arm64 --build-arg TARGETPLATFORM=linux/amd64
 ```
 
 This project creates a web UI for the [DAO DAO smart

@@ -7,3 +7,4 @@ services:
         - BUILDPLATFORM
         - TARGETPLATFORM
     image: ${IMAGE_NAME}
+    platform: ${BUILD_PLATFORM}
