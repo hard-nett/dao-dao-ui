@@ -23,13 +23,23 @@ WORKDIR /app/apps/sda
 # Install the dependencies specifically for the sda app this time
 RUN yarn install
 
-# Build the Next.js application, make sure build doesnt crash 
-RUN NODE_OPTIONS=--max_old_space_size=8192 yarn build 
+# prebuild  
+# WORKDIR /app/packages/state
+# RUN yarn install
+# RUN yarn run build:gql
+# WORKDIR /app/apps/sda
 
+# Build the SDA, make sure build doesnt crash 
+ENV SKIP_PREBUILD=true
+ENV NODE_OPTIONS=--max_old_space_size=8192
+
+
+# default
+RUN yarn build 
 EXPOSE 3000
 CMD ["yarn", "run", "start"]
 
-# # Bundle static assets with Nginx
+# nginx 
 # FROM nginx:1.21.0-alpine as production
 # ENV NODE_ENV production
 # # Copy built assets from `builder` image

@@ -1,12 +1,26 @@
 ## DAO DAO UI
 
 ## SHITSTRAP TODO
-- Add payment suggestion for funding shitstrap if no balance 
-- Add filtering support 
+
+- Add payment suggestion for funding shitstrap if no balance
+- Add filtering support
 - use chain prefix to trunicate factorytoken labels.
-- Improve shitstrap line 
+- Improve shitstrap line
 - Improve shitstrap card
 - Improve shitstrap payment proposal form
+
+## Docker 
+
+set the image name & tag:
+```sh
+IMAGE_NAME=da0-da0/dao-dao-ui-sda:v0.0.1
+```
+
+build the image: 
+```sh
+# Make sure to set BUILDPLATFORM is set to your machines platform, and TARGETPLATFORM to the platform you aim to run this image on:
+docker-compose build --build-arg BUILDPLATFORM=linux/amd64 --build-arg TARGETPLATFORM=linux/amd64
+```
 
 This project creates a web UI for the [DAO DAO smart
 contracts](https://github.com/DA0-DA0/dao-contracts), enabling users to:
